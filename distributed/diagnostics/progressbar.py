@@ -130,6 +130,11 @@ class ProgressWidget(ProgressBar):
         self.bar_widget = HBox([ self.bar_text, self.bar ])
         self.widget = VBox([self.elapsed_time, self.bar_widget])
 
+        self.loop = loop or IOLoop()
+
+        if start:
+            sync(self.loop, self.listen)
+
     def _ipython_display_(self, **kwargs):
         IOLoop.current().add_callback(self.listen)
         return self.widget._ipython_display_(**kwargs)
