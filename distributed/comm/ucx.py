@@ -193,11 +193,11 @@ class UCX(Comm):
                 for is_cuda, size in zip(is_cudas.tolist(), sizes.tolist()):
                     if size > 0:
                         if is_cuda:
-                            frame = cuda_array(size)
+                            each_frame = cuda_array(size)
                         else:
-                            frame = np.empty(size, dtype=np.uint8)
-                        await self.ep.recv(frame)
-                        frames.append(frame)
+                            each_frame = np.empty(size, dtype=np.uint8)
+                        await self.ep.recv(each_frame)
+                        frames.append(each_frame)
                     else:
                         if is_cuda:
                             frames.append(cuda_array(size))
