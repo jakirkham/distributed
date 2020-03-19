@@ -5,6 +5,7 @@ See :ref:`communications` for more.
 
 .. _UCX: https://github.com/openucx/ucx
 """
+import asyncio
 import logging
 
 import dask
@@ -193,9 +194,12 @@ class UCX(Comm):
                     cuda_array(size) if is_cuda else np.empty(size, dtype=np.uint8)
                     for is_cuda, size in zip(is_cudas.tolist(), sizes.tolist())
                 ]
-                for each_frame in frames:
-                    if len(each_frame) > 0:
-                        await self.ep.recv(each_frame)
+                recv_tasks = [
+                    self.ep.recv(each_frame)
+                    for each_frame in frames
+                    if len(each_frame) > 0
+                ]
+                await asyncio.wait(recv_tasks)
                 msg = await from_frames(
                     frames, deserialize=self.deserialize, deserializers=deserializers
                 )
