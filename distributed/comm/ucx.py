@@ -191,18 +191,13 @@ class UCX(Comm):
                 # Recv frames
                 frames = []
                 for is_cuda, size in zip(is_cudas.tolist(), sizes.tolist()):
-                    if size > 0:
-                        if is_cuda:
-                            each_frame = cuda_array(size)
-                        else:
-                            each_frame = np.empty(size, dtype=np.uint8)
-                        await self.ep.recv(each_frame)
-                        frames.append(each_frame)
+                    if is_cuda:
+                        each_frame = cuda_array(size)
                     else:
-                        if is_cuda:
-                            frames.append(cuda_array(size))
-                        else:
-                            each_frame = np.empty(size, dtype=np.uint8)
+                        each_frame = np.empty(size, dtype=np.uint8)
+                    if size > 0:
+                        await self.ep.recv(each_frame)
+                    frames.append(each_frame)
                 msg = await from_frames(
                     frames, deserialize=self.deserialize, deserializers=deserializers
                 )
