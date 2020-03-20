@@ -1,3 +1,4 @@
+import asyncio
 import errno
 import logging
 import socket
@@ -192,9 +193,10 @@ class TCP(Comm):
 
             frames = [bytearray(each_length) for each_length in lengths]
             recv_frames = [each_frame for each_frame in frames if len(each_frame) > 0]
-            for each_frame in recv_frames:
+            recv_tasks = [stream.read_into(each_frame) for each_frame in recv_frames]
+            recvd_frame_lengths = await asyncio.gather(*recv_tasks)
+            for n, each_frame in zip(recvd_frame_lengths, recv_frames):
                 each_length = len(each_frame)
-                n = await stream.read_into(each_frame)
                 assert n == each_length, (n, each_length)
         except StreamClosedError as e:
             self.stream = None

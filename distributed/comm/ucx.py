@@ -5,6 +5,7 @@ See :ref:`communications` for more.
 
 .. _UCX: https://github.com/openucx/ucx
 """
+import asyncio
 import logging
 
 import dask
@@ -223,8 +224,8 @@ class UCX(Comm):
                 # the default stream before starting receiving to ensure buffers have been allocated
                 synchronize_stream(0)
 
-                for each_frame in recv_frames:
-                    await self.ep.recv(each_frame)
+                recv_tasks = [self.ep.recv(each_frame) for each_frame in recv_frames]
+                await asyncio.gather(*recv_tasks)
                 msg = await from_frames(
                     frames, deserialize=self.deserialize, deserializers=deserializers
                 )
