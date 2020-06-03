@@ -9,7 +9,7 @@ from tlz import valmap, get_in
 import msgpack
 
 from . import pickle
-from ..utils import has_keyword, typename
+from ..utils import has_keyword, nbytes, typename
 from .compression import maybe_compress, decompress
 from .utils import (
     unpack_frames,
@@ -202,7 +202,7 @@ def serialize(x, serializers=None, on_error="message", context=None):
         compressions = []
         for _header, _frames in headers_frames:
             frames.extend(_frames)
-            length = len(_frames)
+            length = nbytes(_frames)
             lengths.append(length)
             compressions.extend(_header.get("compression") or [None] * len(_frames))
 
