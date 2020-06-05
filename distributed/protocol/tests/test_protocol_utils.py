@@ -2,6 +2,16 @@ from distributed.protocol.utils import merge_frames, pack_frames, unpack_frames
 from distributed.utils import ensure_bytes
 
 
+def test_merge_split_fast_path():
+    header = {"lengths": []}
+    frames = []
+    assert merge_frames(header, frame_split_size(frames)) == [[]]
+
+    header = {"lengths": [3]}
+    frames = [b"abc"]
+    assert merge_frames(header, frame_split_size(frames)) == [[]]
+
+
 def test_merge_frames():
     result = merge_frames({"lengths": [3, 4]}, [b"12", b"34", b"567"])
     expected = [b"123", b"4567"]
