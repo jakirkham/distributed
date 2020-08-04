@@ -1,4 +1,4 @@
-from .serialize import serialize, dask_serialize, dask_deserialize, register_generic
+from .serialize import dask_serialize, dask_deserialize, register_generic
 
 import torch
 import numpy as np
@@ -9,12 +9,12 @@ def serialize_torch_Tensor(t):
     requires_grad_ = t.requires_grad
 
     if requires_grad_:
-        header, frames = serialize(t.detach().numpy())
+        header, frames = dask_serialize(t.detach().numpy())
     else:
-        header, frames = serialize(t.numpy())
+        header, frames = dask_serialize(t.numpy())
 
     if t.grad is not None:
-        grad_header, grad_frames = serialize(t.grad.numpy())
+        grad_header, grad_frames = dask_serialize(t.grad.numpy())
         header["grad"] = {"header": grad_header, "start": len(frames)}
         frames += grad_frames
     header["requires_grad"] = requires_grad_
@@ -49,7 +49,7 @@ def deserialize_torch_Tensor(header, frames):
 
 @dask_serialize.register(torch.nn.Parameter)
 def serialize_torch_Parameters(p):
-    header, frames = serialize(p.detach())
+    header, frames = dask_serialize(p.detach())
     header["requires_grad"] = p.requires_grad
     return header, frames
 
