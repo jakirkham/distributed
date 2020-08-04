@@ -1,4 +1,5 @@
 from .serialize import dask_serialize, dask_deserialize, register_generic
+from .cuda import cuda_deserialize, cuda_serialize
 
 import torch
 import numpy as np
