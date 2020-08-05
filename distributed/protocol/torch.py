@@ -5,21 +5,66 @@ import torch
 import numpy as np
 
 
+@cuda_serialize.register(cupy.ndarray)
+def cuda_serialize_cupy_ndarray(x):
+    # Making sure `x` is behaving
+    if not (x.flags["C_CONTIGUOUS"] or x.flags["F_CONTIGUOUS"]):
+        x = cupy.array(x, copy=True)
+
+    header = x.__cuda_array_interface__.copy()
+    header["strides"] = tuple(x.strides)
+    header["lengths"] = [x.nbytes]
+    frames = [
+        cupy.ndarray(
+            shape=(x.nbytes,), dtype=cupy.dtype("u1"), memptr=x.data, strides=(1,)
+        )
+    ]
+
+    return header, frames
+
+
+@cuda_deserialize.register(cupy.ndarray)
+def cuda_deserialize_cupy_ndarray(header, frames):
+    (frame,) = frames
+    arr = cupy.ndarray(
+        shape=header["shape"],
+        dtype=header["typestr"],
+        memptr=cupy.asarray(frame).data,
+        strides=header["strides"],
+    )
+    return arr
+
+
 @dask_serialize.register(torch.Tensor)
 def serialize_torch_Tensor(t):
-    requires_grad_ = t.requires_grad
+    header = {"shape": tuple(t.shape), "device": t.device.type}
 
+    # Extract type via NumPy
+    header["typestr"] = t[:0].cpu().numpy().dtype.str
+
+    # Handle grad
+    requires_grad_ = t.requires_grad
     if requires_grad_:
         header, frames = dask_serialize(t.detach().numpy())
     else:
         header, frames = dask_serialize(t.numpy())
-
     if t.grad is not None:
         grad_header, grad_frames = dask_serialize(t.grad.numpy())
         header["grad"] = {"header": grad_header, "start": len(frames)}
         frames += grad_frames
     header["requires_grad"] = requires_grad_
-    header["device"] = t.device.type
+
+    # Making sure `t` is contiguous
+    header["strides"] = t.stride()
+    if t.is_contiguous():
+        t = t.flatten()
+    elif t.T.is_contiguous():
+        t = t.T.flatten()
+    else:
+        t = t.contiguous()
+        header["strides"] = t.stride()
+        t = t.flatten()
+
     return header, frames
 
 
