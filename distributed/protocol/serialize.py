@@ -455,10 +455,7 @@ def extract_serialize(x):
 
 def _extract_serialize(x, x2, ser, bytestrings, path=()):
     q = deque()
-    q.append((x, x2, path))
-    while q:
-        x, x2, path = q.pop()
-
+    while True:
         typ_x = type(x)
         if typ_x is dict:
             x_items = x.items()
@@ -479,6 +476,11 @@ def _extract_serialize(x, x2, ser, bytestrings, path=()):
                 bytestrings.add(path_k)
             else:
                 x2[k] = v
+
+        if q:
+            x, x2, path = q.pop()
+        else:
+            break
 
 
 def nested_deserialize(x):
