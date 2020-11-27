@@ -1,4 +1,5 @@
 from array import array
+from collections import deque
 from functools import partial
 from operator import setitem
 import traceback
@@ -456,28 +457,36 @@ def extract_serialize(x):
 
 
 def _extract_serialize(x, ser, bytestrings, path, callback):
-    typ_x = type(x)
-    if typ_x is dict:
-        x2 = {}
-        for k, v in x.items():
-            path_k = path + (k,)
-            callback_k = partial(setitem, x2, k)
-            _extract_serialize(v, ser, bytestrings, path_k, callback_k)
-        callback(x2)
-    elif typ_x is list:
-        x2 = len(x) * [None]
-        for k, v in enumerate(x):
-            path_k = path + (k,)
-            callback_k = partial(setitem, x2, k)
-            _extract_serialize(v, ser, bytestrings, path_k, callback_k)
-        callback(x2)
-    elif typ_x is Serialize or typ_x is Serialized:
-        ser[path] = x
-    elif (typ_x is bytes or typ_x is bytearray) and len(x) > 2 ** 16:
-        ser[path] = to_serialize(x)
-        bytestrings.add(path)
-    else:
-        callback(x)
+    q = deque()
+    while True:
+        typ_x = type(x)
+        if typ_x is dict:
+            x2 = {}
+            for k, v in x.items():
+                path_k = path + (k,)
+                callback_k = partial(setitem, x2, k)
+                q.append((v, path_k, callback_k))
+            callback(x2)
+        elif typ_x is list:
+            x2 = len(x) * [None]
+            for k, v in enumerate(x):
+                path_k = path + (k,)
+                callback_k = partial(setitem, x2, k)
+                q.append((v, path_k, callback_k))
+            callback(x2)
+        elif typ_x is Serialize or typ_x is Serialized:
+            ser[path] = x
+        elif (typ_x is bytes or typ_x is bytearray) and len(x) > 2 ** 16:
+            ser[path] = to_serialize(x)
+            bytestrings.add(path)
+        else:
+            callback(x)
+
+        if q:
+            x, path, callback = q.pop()
+        else:
+            break
+
 
 
 def nested_deserialize(x):
