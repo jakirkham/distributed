@@ -444,40 +444,38 @@ def extract_serialize(x):
     >>> extract_serialize(msg)
     ({'op': 'update'}, {('data',): <Serialize: 123>}, set())
     """
-    typ_x = type(x)
-    if typ_x is dict:
-        x_items = x.items()
-        x2 = {}
-    elif typ_x is list:
-        x_items = enumerate(x)
-        x2 = len(x) * [None]
-
     ser = {}
     bytestrings = set()
     path = ()
-    _extract_serialize(x_items, x2, ser, bytestrings, path)
+    x2 = _extract_serialize(x, ser, bytestrings, path)
     return x2, ser, bytestrings
 
 
-def _extract_serialize(x_items, x2, ser, bytestrings, path):
-    for k, v in x_items:
-        path_k = path + (k,)
-        typ_v = type(v)
-        if typ_v is dict:
-            v_items = v.items()
-            x2[k] = v2 = {}
-            _extract_serialize(v_items, v2, ser, bytestrings, path_k)
-        elif typ_v is list:
-            v_items = enumerate(v)
-            x2[k] = v2 = len(v) * [None]
-            _extract_serialize(v_items, v2, ser, bytestrings, path_k)
-        elif typ_v is Serialize or typ_v is Serialized:
-            ser[path_k] = v
-        elif (typ_v is bytes or typ_v is bytearray) and len(v) > 2 ** 16:
-            ser[path_k] = to_serialize(v)
-            bytestrings.add(path_k)
-        else:
-            x2[k] = v
+def _extract_serialize(x, ser, bytestrings, path):
+    typ_x = type(x)
+    if typ_x is dict:
+        x2 = {}
+        for k, v in x.items():
+            path_k = path + (k,)
+            v2 = _extract_serialize(v, ser, bytestrings, path_k)
+            if v2 is not None:
+                x2[k] = v2
+        return x2
+    elif typ_x is list:
+        x2 = len(x) * [None]
+        for k, v in enumerate(x):
+            path_k = path + (k,)
+            v2 = _extract_serialize(v, ser, bytestrings, path_k)
+            if v2 is not None:
+                x2[k] = v2
+        return x2
+    elif typ_x is Serialize or typ_x is Serialized:
+        ser[path] = x
+    elif (typ_x is bytes or typ_x is bytearray) and len(x) > 2 ** 16:
+        ser[path] = to_serialize(x)
+        bytestrings.add(path)
+    else:
+        return x
 
 
 def nested_deserialize(x):
