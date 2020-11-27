@@ -1,5 +1,6 @@
 from array import array
 from functools import partial
+from operator import setitem
 import traceback
 import importlib
 from enum import Enum
@@ -447,35 +448,36 @@ def extract_serialize(x):
     ser = {}
     bytestrings = set()
     path = ()
-    x2 = _extract_serialize(x, ser, bytestrings, path)
+    r: list = [None]
+    callback = partial(setitem, r, 0)
+    _extract_serialize(x, ser, bytestrings, path, callback)
+    x2 = r[0]
     return x2, ser, bytestrings
 
 
-def _extract_serialize(x, ser, bytestrings, path):
+def _extract_serialize(x, ser, bytestrings, path, callback):
     typ_x = type(x)
     if typ_x is dict:
         x2 = {}
         for k, v in x.items():
             path_k = path + (k,)
-            v2 = _extract_serialize(v, ser, bytestrings, path_k)
-            if v2 is not None:
-                x2[k] = v2
-        return x2
+            callback_k = partial(setitem, x2, k)
+            _extract_serialize(v, ser, bytestrings, path_k, callback_k)
+        callback(x2)
     elif typ_x is list:
         x2 = len(x) * [None]
         for k, v in enumerate(x):
             path_k = path + (k,)
-            v2 = _extract_serialize(v, ser, bytestrings, path_k)
-            if v2 is not None:
-                x2[k] = v2
-        return x2
+            callback_k = partial(setitem, x2, k)
+            _extract_serialize(v, ser, bytestrings, path_k, callback_k)
+        callback(x2)
     elif typ_x is Serialize or typ_x is Serialized:
         ser[path] = x
     elif (typ_x is bytes or typ_x is bytearray) and len(x) > 2 ** 16:
         ser[path] = to_serialize(x)
         bytestrings.add(path)
     else:
-        return x
+        callback(x)
 
 
 def nested_deserialize(x):
