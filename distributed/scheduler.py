@@ -3647,17 +3647,17 @@ class Scheduler(SchedulerState, ServerNode):
         client=None,
         tasks=None,
         keys=None,
-        dependencies=None,
-        restrictions=None,
+        dependencies: dict = None,
+        restrictions: dict = None,
         priority=None,
-        loose_restrictions=None,
-        resources=None,
+        loose_restrictions: list = None,
+        resources: dict = None,
         submitting_task=None,
-        retries=None,
+        retries: dict = None,
         user_priority=0,
         actors=None,
         fifo_timeout=0,
-        annotations=None,
+        annotations: dict = None,
     ):
         """
         Add new computations to the internal dask graph
@@ -3667,7 +3667,7 @@ class Scheduler(SchedulerState, ServerNode):
         parent: SchedulerState = cast(SchedulerState, self)
         start = time()
         fifo_timeout = parse_timedelta(fifo_timeout)
-        keys = set(keys)
+        keys: set = set(keys)
         if len(tasks) > 1:
             self.log_event(
                 ["all", client], {"action": "update_graph", "count": len(tasks)}
@@ -3678,9 +3678,10 @@ class Scheduler(SchedulerState, ServerNode):
             if tasks[k] is k:
                 del tasks[k]
 
-        dependencies = dependencies or {}
+        if dependencies is None:
+            dependencies = {}
 
-        n = 0
+        n: Py_ssize_t = 0
         while len(tasks) != n:  # walk through new tasks, cancel any bad deps
             n = len(tasks)
             for k, deps in list(dependencies.items()):
@@ -3697,7 +3698,7 @@ class Scheduler(SchedulerState, ServerNode):
 
         # Avoid computation that is already finished
         ts: TaskState
-        already_in_memory = set()  # tasks that are already done
+        already_in_memory: set = set()  # tasks that are already done
         for k, v in dependencies.items():
             if v and k in parent._tasks:
                 ts = parent._tasks[k]
@@ -3705,10 +3706,11 @@ class Scheduler(SchedulerState, ServerNode):
                     already_in_memory.add(k)
 
         dts: TaskState
+        stack: list
         if already_in_memory:
             dependents = dask.core.reverse_dict(dependencies)
             stack = list(already_in_memory)
-            done = set(already_in_memory)
+            done: set = set(already_in_memory)
             while stack:  # remove unnecessary dependencies
                 key = stack.pop()
                 ts = parent._tasks[key]
@@ -3732,8 +3734,8 @@ class Scheduler(SchedulerState, ServerNode):
 
         # Get or create task states
         stack = list(keys)
-        touched_keys = set()
-        touched_tasks = []
+        touched_keys: set = set()
+        touched_tasks: list = []
         while stack:
             k = stack.pop()
             if k in touched_keys:
@@ -3764,11 +3766,16 @@ class Scheduler(SchedulerState, ServerNode):
         if isinstance(user_priority, Number):
             user_priority = {k: user_priority for k in tasks}
 
-        annotations = annotations or {}
-        restrictions = restrictions or {}
-        loose_restrictions = loose_restrictions or []
-        resources = resources or {}
-        retries = retries or {}
+        if annotations is None:
+            annotations = {}
+        if restrictions is None:
+            restrictions = {}
+        if loose_restrictions is None:
+            loose_restrictions = []
+        if resources is None:
+            resources = {}
+        if retries is None:
+            retries = {}
 
         # Override existing taxonomy with per task annotations
         if annotations:
@@ -3824,7 +3831,7 @@ class Scheduler(SchedulerState, ServerNode):
                 ts._priority = (-(user_priority.get(key, 0)), generation, priority[key])
 
         # Ensure all runnables have a priority
-        runnables = [ts for ts in touched_tasks if ts._run_spec]
+        runnables: list = [ts for ts in touched_tasks if ts._run_spec]
         for ts in runnables:
             if ts._priority is None and ts._run_spec:
                 ts._priority = (self.generation, 0)
