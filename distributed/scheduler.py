@@ -5886,7 +5886,7 @@ class Scheduler(SchedulerState, ServerNode):
                     start,
                     finish2,
                     ts._state,
-                    dict(recommendations),
+                    str(recommendations),
                 )
             if self.plugins:
                 # Temporarily put back forgotten key for plugin to retrieve it
