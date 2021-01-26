@@ -4716,8 +4716,7 @@ class Scheduler(SchedulerState, ServerNode):
         for worker, msgs in worker_msgs.items():
             try:
                 w = stream_comms[worker]
-                for msg in msgs:
-                    w.send(msg)
+                w.send(*msgs)
             except (CommClosedError, AttributeError):
                 self.loop.add_callback(self.remove_worker, address=worker)
 
@@ -4725,12 +4724,11 @@ class Scheduler(SchedulerState, ServerNode):
             c = client_comms.get(client)
             if c is None:
                 continue
-            for msg in msgs:
-                try:
-                    c.send(msg)
-                except CommClosedError:
-                    if self.status == Status.running:
-                        logger.critical("Tried writing to closed comm: %s", msg)
+            try:
+                c.send(*msgs)
+            except CommClosedError:
+                if self.status == Status.running:
+                    logger.critical("Tried writing to closed comm: %s", msgs)
 
     ############################
     # Less common interactions #
