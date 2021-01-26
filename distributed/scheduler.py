@@ -5832,6 +5832,7 @@ class Scheduler(SchedulerState, ServerNode):
         parent: SchedulerState = cast(SchedulerState, self)
         ts: TaskState
         start: str
+        start_finish: tuple
         recommendations: dict
         worker_msgs: dict
         client_msgs: dict
@@ -5850,12 +5851,13 @@ class Scheduler(SchedulerState, ServerNode):
                 dependents = set(ts._dependents)
                 dependencies = set(ts._dependencies)
 
+            start_finish = (start, finish)
             worker_msgs = {}
             client_msgs = {}
-            if (start, finish) in self._transitions:
-                func = self._transitions[start, finish]
+            if start_finish in self._transitions:
+                func = self._transitions[start_finish]
                 recommendations, worker_msgs, client_msgs = func(key, *args, **kwargs)
-            elif "released" not in (start, finish):
+            elif "released" not in start_finish:
                 func = self._transitions["released", finish]
                 assert not args and not kwargs
                 a = self.transition(key, "released")
@@ -5867,9 +5869,7 @@ class Scheduler(SchedulerState, ServerNode):
                 recommendations = a
                 start = "released"
             else:
-                raise RuntimeError(
-                    "Impossible transition from %r to %r" % (start, finish)
-                )
+                raise RuntimeError("Impossible transition from %r to %r" % start_finish)
 
             for worker, msg in worker_msgs.items():
                 self.worker_send(worker, msg)
