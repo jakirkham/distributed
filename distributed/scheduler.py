@@ -5833,6 +5833,7 @@ class Scheduler(SchedulerState, ServerNode):
         ts: TaskState
         start: str
         start_finish: tuple
+        finish2: str
         recommendations: dict
         worker_msgs: dict
         client_msgs: dict
