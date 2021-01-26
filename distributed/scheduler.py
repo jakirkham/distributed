@@ -5857,7 +5857,8 @@ class Scheduler(SchedulerState, ServerNode):
             client_msgs = {}
             func = self._transitions.get(start_finish)
             if func is not None:
-                recommendations, worker_msgs, client_msgs = func(key, *args, **kwargs)
+                t: tuple = func(key, *args, **kwargs)
+                recommendations, worker_msgs, client_msgs = t
             elif "released" not in start_finish:
                 func = self._transitions["released", finish]
                 assert not args and not kwargs
@@ -5866,7 +5867,8 @@ class Scheduler(SchedulerState, ServerNode):
                 if v is not None:
                     func = self._transitions["released", v]
                 b: dict
-                b, worker_msgs, client_msgs = func(key)
+                t: tuple = func(key)
+                b, worker_msgs, client_msgs = t
                 recommendations.update(a)
                 recommendations.update(b)
                 start = "released"
