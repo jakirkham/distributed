@@ -5834,6 +5834,8 @@ class Scheduler(SchedulerState, ServerNode):
         recommendations: dict
         worker_msgs: dict
         client_msgs: dict
+        dependents: set
+        dependencies: set
         try:
             try:
                 ts = parent._tasks[key]
