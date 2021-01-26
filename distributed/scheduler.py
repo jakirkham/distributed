@@ -5924,8 +5924,9 @@ class Scheduler(SchedulerState, ServerNode):
         reach a steady state
         """
         parent: SchedulerState = cast(SchedulerState, self)
-        keys = set()
+        keys: set = set()
         recommendations = recommendations.copy()
+        new: dict
         while recommendations:
             key, finish = recommendations.popitem()
             keys.add(key)
