@@ -5813,7 +5813,7 @@ class Scheduler(SchedulerState, ServerNode):
     # State Transitions #
     #####################
 
-    def transition(self, key, finish, *args, **kwargs):
+    def transition(self, key, finish: str, *args, **kwargs):
         """Transition a key from its current state to the finish state
 
         Examples
@@ -5831,6 +5831,7 @@ class Scheduler(SchedulerState, ServerNode):
         """
         parent: SchedulerState = cast(SchedulerState, self)
         ts: TaskState
+        start: str
         recommendations: dict
         worker_msgs: dict
         client_msgs: dict
