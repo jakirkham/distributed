@@ -5831,6 +5831,7 @@ class Scheduler(SchedulerState, ServerNode):
         """
         parent: SchedulerState = cast(SchedulerState, self)
         ts: TaskState
+        recommendations: dict
         worker_msgs: dict
         client_msgs: dict
         try:
@@ -5846,7 +5847,7 @@ class Scheduler(SchedulerState, ServerNode):
                 dependents = set(ts._dependents)
                 dependencies = set(ts._dependencies)
 
-            recommendations: dict = {}
+            recommendations = {}
             worker_msgs = {}
             client_msgs = {}
             if (start, finish) in self._transitions:
