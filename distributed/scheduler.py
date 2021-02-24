@@ -5856,9 +5856,9 @@ class Scheduler(SchedulerState, ServerNode):
             assert False, (key, ts)
             return
 
-        report_msg: dict = _task_to_report_msg(parent, ts)
-        if report_msg is not None:
-            self.report(report_msg, ts=ts, client=client)
+        client_msgs: dict = _task_to_client_msgs(parent, ts)
+        worker_msgs: dict = {}
+        self.send_all(client_msgs, worker_msgs)
 
     async def feed(
         self, comm, function=None, setup=None, teardown=None, interval="1s", **kwargs
