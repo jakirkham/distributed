@@ -17,6 +17,8 @@ distributed:
     # after they have been removed from the scheduler
     events-cleanup-delay: 1h
     idle-timeout: null      # Shut down after this duration, like "1h" or "30 minutes"
+    # after they have been removed from the scheduler
+    reevaluate-occupancy-delay: 0s
     transition-log-length: 100000
     work-stealing: True     # workers should steal tasks from each other
     work-stealing-interval: 100ms  # Callback time for work stealing
