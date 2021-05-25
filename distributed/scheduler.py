@@ -3871,7 +3871,9 @@ class Scheduler(SchedulerState, ServerNode):
 
         if priority is None:
             # Removing all non-local keys before calling order()
-            dsk_keys: set = set(dsk)  # intersection() of sets is much faster than dict_keys
+            dsk_keys: set = set(
+                dsk
+            )  # intersection() of sets is much faster than dict_keys
             v: set
             stripped_deps: dict = {
                 k: v.intersection(dsk_keys)
@@ -3933,7 +3935,7 @@ class Scheduler(SchedulerState, ServerNode):
             if tasks[k] is k:
                 del tasks[k]
 
-        cs: ClientState = parent._clients[client]
+        cs: ClientState = None  # parent._clients[client]
         if dependencies is None:
             dependencies = {}
 
@@ -3949,6 +3951,8 @@ class Scheduler(SchedulerState, ServerNode):
                     dep not in parent._tasks and dep not in tasks for dep in deps
                 ):  # bad key
                     logger.info("User asked for computation on lost data, %s", k)
+                    if cs is None:
+                        cs = parent._clients[client]
                     del tasks[k]
                     del dependencies[k]
                     if k in keys:
