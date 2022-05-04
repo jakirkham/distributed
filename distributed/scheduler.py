@@ -623,14 +623,14 @@ class Computation:
         self.id = uuid.uuid4()
 
     @property
-    def stop(self):
+    def stop(self) -> float:
         if self.groups:
             return max(tg.stop for tg in self.groups)
         else:
-            return -1
+            return -1.0
 
     @property
-    def states(self):
+    def states(self) -> dict[str, int]:
         tg: TaskGroup
         return merge_with(sum, [tg.states for tg in self.groups])
 
@@ -712,7 +712,7 @@ class TaskPrefix:
                 self.duration_average = 0.5 * duration + 0.5 * old
 
     @property
-    def states(self):
+    def states(self) -> dict[str, int]:
         return merge_with(sum, [tg.states for tg in self.groups])
 
     @property
@@ -724,7 +724,7 @@ class TaskPrefix:
         ]
 
     @property
-    def active_states(self):
+    def active_states(self) -> dict[str, int]:
         return merge_with(sum, [tg.states for tg in self.active])
 
     def __repr__(self):
@@ -739,18 +739,18 @@ class TaskPrefix:
         )
 
     @property
-    def nbytes_total(self):
+    def nbytes_total(self) -> int:
         return sum([tg.nbytes_total for tg in self.groups])
 
     def __len__(self):
         return sum(map(len, self.groups))
 
     @property
-    def duration(self):
+    def duration(self) -> float:
         return sum([tg.duration for tg in self.groups])
 
     @property
-    def types(self):
+    def types(self) -> set[str]:
         return set().union(*[tg.types for tg in self.groups])
 
 
@@ -1195,9 +1195,9 @@ class TaskState:
         self.who_has: set[WorkerState] = set()
         self.processing_on: WorkerState = None  # type: ignore
         self.has_lost_dependencies = False
-        self.host_restrictions = None  # type: ignore
-        self.worker_restrictions = None  # type: ignore
-        self.resource_restrictions = None  # type: ignore
+        self.host_restrictions: set[str] = set()
+        self.worker_restrictions: set[str] = set()
+        self.resource_restrictions: dict[str, float] = {}
         self.loose_restrictions = False
         self.actor = False
         self.prefix: TaskPrefix = None  # type: ignore
@@ -1393,7 +1393,7 @@ class SchedulerState:
         workers: SortedDict[str, WorkerState],
         host_info: dict,
         resources: dict,
-        tasks: dict,
+        tasks: dict[str, TaskState],
         unrunnable: set,
         validate: bool,
         plugins: Iterable[SchedulerPlugin] = (),
@@ -1475,7 +1475,7 @@ class SchedulerState:
         return MemoryState.sum(*(w.memory for w in self.workers.values()))
 
     @property
-    def __pdict__(self):
+    def __pdict__(self) -> dict[str, object]:
         return {
             "bandwidth": self.bandwidth,
             "resources": self.resources,
@@ -1740,7 +1740,7 @@ class SchedulerState:
 
             ts.state = "waiting"
 
-            dts: TaskState
+            #dts: TaskState
             for dts in ts.dependencies:
                 if dts.exception_blame:
                     ts.exception_blame = dts.exception_blame
@@ -5450,7 +5450,7 @@ class Scheduler(SchedulerState, ServerNode):
     async def rebalance(
         self,
         comm=None,
-        keys: "Iterable[Hashable]" = None,
+        keys: "Iterable[str]" = None,
         workers: "Iterable[str]" = None,
         stimulus_id: str = None,
     ) -> dict:
@@ -6288,9 +6288,9 @@ class Scheduler(SchedulerState, ServerNode):
             self.client_desires_keys(keys=list(who_has), client=client)
 
     def report_on_key(self, key: str = None, ts: TaskState = None, client: str = None):
-        if ts is None:
+        if ts is None and key is not None:
             ts = self.tasks.get(key)
-        elif key is None:
+        elif ts is not None and key is None:
             key = ts.key
         else:
             assert False, (key, ts)
