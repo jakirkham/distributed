@@ -23,27 +23,39 @@ def cuda_serialize_numba_ndarray(x):
 
     header = x.__cuda_array_interface__.copy()
     header["strides"] = tuple(x.strides)
-    frames = [
-        numba.cuda.cudadrv.devicearray.DeviceNDArray(
-            shape=(x.nbytes,), strides=(1,), dtype=np.dtype("u1"), gpu_data=x.gpu_data
+    frames = []
+    if x.nbytes:
+        frames.append(
+            numba.cuda.cudadrv.devicearray.DeviceNDArray(
+                shape=(x.nbytes,),
+                strides=(1,),
+                dtype=np.dtype("u1"),
+                gpu_data=x.gpu_data,
+            )
         )
-    ]
 
     return header, frames
 
 
 @cuda_deserialize.register(numba.cuda.devicearray.DeviceNDArray)
 def cuda_deserialize_numba_ndarray(header, frames):
-    (frame,) = frames
     shape = header["shape"]
     strides = header["strides"]
 
-    arr = numba.cuda.devicearray.DeviceNDArray(
-        shape=shape,
-        strides=strides,
-        dtype=np.dtype(header["typestr"]),
-        gpu_data=numba.cuda.as_cuda_array(frame).gpu_data,
-    )
+    if frames:
+        (frame,) = frames
+        arr = numba.cuda.devicearray.DeviceNDArray(
+            shape=shape,
+            strides=strides,
+            dtype=np.dtype(header["typestr"]),
+            gpu_data=numba.cuda.as_cuda_array(frame).gpu_data,
+        )
+    else:
+        arr = numba.cuda.devicearray.DeviceNDArray(
+            shape=shape,
+            strides=strides,
+            dtype=np.dtype(header["typestr"]),
+        )
     return arr
 
 

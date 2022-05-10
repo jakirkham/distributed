@@ -102,7 +102,10 @@ def serialize_numpy_ndarray(x, context=None):
     if broadcast_to is not None:
         header["broadcast_to"] = broadcast_to
 
-    frames = [data]
+    frames = []
+    if data:
+        frames.append(data)
+
     return header, frames
 
 
@@ -112,7 +115,6 @@ def deserialize_numpy_ndarray(header, frames):
     if header.get("pickle"):
         return pickle.loads(frames[0], buffers=frames[1:])
 
-    (frame,) = frames
     (writeable,) = header["writeable"]
 
     is_custom, dt = header["dtype"]
@@ -126,7 +128,12 @@ def deserialize_numpy_ndarray(header, frames):
     else:
         shape = header["shape"]
 
-    x = np.ndarray(shape, dtype=dt, buffer=frame, strides=header["strides"])
+    if frames:
+        (frame,) = frames
+        x = np.ndarray(shape, dtype=dt, buffer=frame, strides=header["strides"])
+    else:
+        x = np.ndarray(shape, dtype=dt, strides=header["strides"])
+
     if not writeable:
         x.flags.writeable = False
     else:

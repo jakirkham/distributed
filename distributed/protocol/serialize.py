@@ -727,7 +727,9 @@ def normalize_Serialized(o):
 @dask_serialize.register(bytes)
 def _serialize_bytes(obj):
     header = {}  # no special metadata
-    frames = [obj]
+    frames = []
+    if obj:
+        frames.append(obj)
     return header, frames
 
 
@@ -735,22 +737,38 @@ def _serialize_bytes(obj):
 @dask_serialize.register(bytearray)
 def _serialize_bytearray(obj):
     header = {}  # no special metadata
-    frames = [obj]
+    frames = []
+    if obj:
+        frames.append(obj)
     return header, frames
 
 
 @dask_deserialize.register(bytes)
 def _deserialize_bytes(header, frames):
-    if len(frames) == 1 and isinstance(frames[0], bytes):
-        return frames[0]
+    nframes = len(nframes)
+    if nframes == 0:
+        return bytes()
+    elif nframes == 1:
+        f = frames[0]
+        if isinstance(f, bytes):
+            return f
+        else:
+            return bytes(f)
     else:
         return bytes().join(frames)
 
 
 @dask_deserialize.register(bytearray)
 def _deserialize_bytearray(header, frames):
-    if len(frames) == 1 and isinstance(frames[0], bytearray):
-        return frames[0]
+    nframes = len(frames)
+    if nframes == 0:
+        return bytearray()
+    elif nframes == 1:
+        f = frames[0]
+        if isinstance(f, bytearray):
+            return f
+        else:
+            return bytearray(f)
     else:
         return bytearray().join(frames)
 
@@ -758,7 +776,9 @@ def _deserialize_bytearray(header, frames):
 @dask_serialize.register(array)
 def _serialize_array(obj):
     header = {"typecode": obj.typecode, "writeable": (None,)}
-    frames = [memoryview(obj)]
+    frames = []
+    if obj:
+        frames.append(memoryview(obj))
     return header, frames
 
 
@@ -778,13 +798,18 @@ def _serialize_memoryview(obj):
     if obj.format == "O":
         raise ValueError("Cannot serialize `memoryview` containing Python objects")
     header = {"format": obj.format, "shape": obj.shape}
-    frames = [obj]
+    frames = []
+    if obj:
+        frames.append(obj)
     return header, frames
 
 
 @dask_deserialize.register(memoryview)
 def _deserialize_memoryview(header, frames):
-    if len(frames) == 1:
+    nframes = len(frames)
+    if nframes == 0:
+        out = memoryview(b"")
+    elif nframes == 1:
         out = memoryview(frames[0]).cast("B")
     else:
         out = memoryview(b"".join(frames))
