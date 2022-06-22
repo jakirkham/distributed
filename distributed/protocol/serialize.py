@@ -772,9 +772,12 @@ def _deserialize_array(header, frames):
 def _serialize_memoryview(obj):
     if obj.format == "O":
         raise ValueError("Cannot serialize `memoryview` containing Python objects")
-    if not obj and obj.ndim > 1:
-        raise ValueError("Cannot serialize empty non-1-D `memoryview`")
-    header = {"format": obj.format, "shape": obj.shape}
+    header = {"format": obj.format}
+    if obj.ndim > 1:
+        if obj:
+            header["shape"] = obj.shape
+        else:
+            raise ValueError("Cannot serialize empty non-1-D `memoryview`")
     frames = [obj]
     return header, frames
 
@@ -786,12 +789,8 @@ def _deserialize_memoryview(header, frames):
     else:
         out = memoryview(b"".join(frames))
 
-    # handle empty `memoryview`s
-    if out:
-        out = out.cast(header["format"], header["shape"])
-    else:
-        out = out.cast(header["format"])
-        assert out.shape == header["shape"]
+    # handle empty bytearrays
+    out = out.cast(**header)
 
     return out
 
