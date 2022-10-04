@@ -79,11 +79,11 @@ def unpack_frames(b):
     (n_frames,) = struct.unpack_from(fmt, b)
     lengths = struct.unpack_from(f"{n_frames}{fmt}", b, fmt_size)
 
-    frames = []
+    frames = n_frames * [None]
     start = fmt_size * (1 + n_frames)
-    for length in lengths:
+    for nth_frame, length in enumerate(lengths):
         end = start + length
-        frames.append(b[start:end])
+        frames[nth_frame] = b[start:end]
         start = end
 
     return frames
