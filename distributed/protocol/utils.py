@@ -81,13 +81,10 @@ def unpack_frames(b):
     (n_frames,) = Struct_Q.unpack_from(b)
     lengths = struct.unpack_from(f"{n_frames}Q", b, Struct_Q.size)
 
-    frames = n_frames * [None]
     start = Struct_Q.size * (1 + n_frames)
     frame_indices = sliding_window(2, accumulate(lengths, initial=start))
-    for nth_frame, (start, end) in enumerate(frame_indices):
-        frames[nth_frame] = b[start:end]
 
-    return frames
+    return [b[start:end] for start, end in frame_indices]
 
 
 def merge_memoryviews(mvs: Sequence[memoryview]) -> memoryview:
