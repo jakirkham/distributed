@@ -3,6 +3,8 @@ from __future__ import annotations
 import ctypes
 import struct
 from collections.abc import Sequence
+from itertools import accumulate
+from tlz.itertoolz import rest
 
 import dask
 
@@ -81,8 +83,7 @@ def unpack_frames(b):
 
     frames = n_frames * [None]
     start = Struct_Q.size * (1 + n_frames)
-    for nth_frame, length in enumerate(lengths):
-        end = start + length
+    for nth_frame, end in enumerate(rest(accumulate(lengths, initial=start))):
         frames[nth_frame] = b[start:end]
         start = end
 
