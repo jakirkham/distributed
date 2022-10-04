@@ -18,6 +18,9 @@ msgpack_opts["strict_map_key"] = False
 msgpack_opts["raw"] = False
 
 
+Struct_Q = struct.Struct("Q")
+
+
 def frame_split_size(
     frame: bytes | memoryview, n: int = BIG_BYTES_SHARD_SIZE
 ) -> list[memoryview]:
@@ -73,14 +76,11 @@ def unpack_frames(b):
     """
     b = memoryview(b)
 
-    fmt = "Q"
-    fmt_size = struct.calcsize(fmt)
-
-    (n_frames,) = struct.unpack_from(fmt, b)
-    lengths = struct.unpack_from(f"{n_frames}{fmt}", b, fmt_size)
+    (n_frames,) = Struct_Q.unpack_from(b)
+    lengths = struct.unpack_from(f"{n_frames}Q", b, Struct_Q.size)
 
     frames = n_frames * [None]
-    start = fmt_size * (1 + n_frames)
+    start = Struct_Q.size * (1 + n_frames)
     for nth_frame, length in enumerate(lengths):
         end = start + length
         frames[nth_frame] = b[start:end]
