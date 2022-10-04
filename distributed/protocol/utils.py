@@ -3,7 +3,7 @@ from __future__ import annotations
 import ctypes
 import struct
 from collections.abc import Sequence
-from itertools import accumulate
+from itertools import accumulate, starmap
 from tlz.itertoolz import sliding_window
 
 import dask
@@ -82,9 +82,9 @@ def unpack_frames(b):
     lengths = struct.unpack_from(f"{n_frames}Q", b, Struct_Q.size)
 
     start = Struct_Q.size * (1 + n_frames)
-    frame_indices = sliding_window(2, accumulate(lengths, initial=start))
+    slices = starmap(slice, sliding_window(2, accumulate(lengths, initial=start)))
 
-    return [b[start:end] for start, end in frame_indices]
+    return [b[sl] for sl in slices]
 
 
 def merge_memoryviews(mvs: Sequence[memoryview]) -> memoryview:
