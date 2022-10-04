@@ -4,7 +4,7 @@ import ctypes
 import struct
 from collections.abc import Sequence
 from itertools import accumulate
-from tlz.itertoolz import rest
+from tlz.itertoolz import sliding_window
 
 import dask
 
@@ -83,9 +83,9 @@ def unpack_frames(b):
 
     frames = n_frames * [None]
     start = Struct_Q.size * (1 + n_frames)
-    for nth_frame, end in enumerate(rest(accumulate(lengths, initial=start))):
+    frame_indices = sliding_window(2, accumulate(lengths, initial=start))
+    for nth_frame, (start, end) in enumerate(frame_indices):
         frames[nth_frame] = b[start:end]
-        start = end
 
     return frames
 
